@@ -189,7 +189,7 @@ def calc_bounding_rec(shape: float):
 
 # one Metropolis Monte Carlo loop
 # acc_parameter: parameter used to determine whether to accept an energy-raising step. Check Boltzmann distribution.
-def mc_met(acc: float, shape: float, stick_rate: float):
+def mc_met(shape: float, acc: float, stick_rate: float):
     mover = np.random.randint(num)
     if is_pinned(mover):
         mover = np.random.randint(num)
@@ -223,44 +223,55 @@ def mc_met(acc: float, shape: float, stick_rate: float):
     if new_energy - old_energy <= 1e-6:
         print("Taking step with energy falling.")
         calc_adj_matrix()
-        return
+        return new_energy
     else:
         threshold = np.power(np.e, (new_energy - old_energy) * -acc)
         accept = np.random.rand()
         if accept < threshold:
             print("Taking step with energy raising.")
             calc_adj_matrix()
+            return new_energy
         else:
             print("Refusing step with energy raising.")
             circles[mover] = mover_old_parameter
-        return
+            return old_energy
 # mc_met
 
 # TODO shrink all components to make them touch
 
+
 num = 0
 circles = np.ndarray((1,))
 adj_matrix = np.ndarray((1,))
+min_energy = np.inf
+min_arr = np.ndarray((1,))
 
 
 if __name__ == "__main__":
     # num = int(input("Input num of circles."))
-    num = 50
+    num = 4
     adj_matrix = np.zeros((num, num))
     circles = np.zeros((num, 2))
 
     for i in range(num - 1):
         circles[i] = (0, i)
     circles[num - 1] = (1, 0)
-    '''
-    for i in range(2):
-        for j in range(100):
-            circles[i*100 + j] = (i, j)
-    '''
+    fig, ax = plt.subplots()
+    fig.set_size_inches(10, 40)
+    plt.xlim(-10, 10)
+    plt.ylim(-10, 60)
+    plt.grid(linestyle='--')
+    ax.set_aspect(1)
+
     calc_adj_matrix()
-    for i in range(1000000):
+    for i in range(10000):
         print("Step ", i)
-        mc_met(5, 3, 0.8)
+        cur_energy = mc_met(1, 10, 0.8)
+
+        if cur_energy < min_energy:
+            print("New minimum found.")
+            min_energy = cur_energy
+            min_arr = np.copy(circles)
 
         if i % 100 == 0:
             # plotting
@@ -275,3 +286,8 @@ if __name__ == "__main__":
                 cur_circle = plt.Circle(circles[i], 0.5)
                 ax.add_artist(cur_circle)
             plt.show()
+
+        for i in range(num):
+            cur_circle = plt.Circle(min_arr[i], 0.5)
+            ax.add_artist(cur_circle)
+        plt.show()
